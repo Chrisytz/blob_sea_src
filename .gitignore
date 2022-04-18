@@ -1,7 +1,5 @@
-# Prerequisites
-*.d
-
 # Compiled Object files
+**/.DS_Store
 *.slo
 *.lo
 *.o
@@ -25,8 +23,27 @@
 *.la
 *.a
 *.lib
+*.idea
 
 # Executables
 *.exe
 *.out
 *.app
+
+#
+**/cmake-build-debug
+**/glfw
+
+include/divisible/*
+
+
+## Local
+
+.idea/*.xml
+
+build/**/*
+
+include/*
+lib/*
+bin/*
+test/test_runner
