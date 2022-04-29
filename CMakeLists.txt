@@ -10,9 +10,9 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 get_filename_component(PARENT_DIR ../ ABSOLUTE)
 
 include_directories(${PARENT_DIR}/OpenGL_Libraries/Include
-        Inc
+                    Inc
                     Resources
-        Src)
+                    Src)
 
 add_subdirectory(${PARENT_DIR}/OpenGL_Libraries/glfw-3.3.7/glfw glfw)
 add_subdirectory(${PARENT_DIR}/OpenGL_Libraries/assimp-5.2.3/assimp assimp)
