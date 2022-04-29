@@ -47,3 +47,6 @@ include/*
 lib/*
 bin/*
 test/test_runner
+cmake-build-release/assimp/CMakeFiles/
+
+cmake-build-release/
