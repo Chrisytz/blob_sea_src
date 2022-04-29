@@ -10,16 +10,16 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 get_filename_component(PARENT_DIR ../ ABSOLUTE)
 
 include_directories(${PARENT_DIR}/OpenGL_Libraries/Include
-                    Header_Files
+        Inc
                     Resources
-                    Source_Files)
+        Src)
 
 add_subdirectory(${PARENT_DIR}/OpenGL_Libraries/glfw-3.3.7/glfw glfw)
 add_subdirectory(${PARENT_DIR}/OpenGL_Libraries/assimp-5.2.3/assimp assimp)
 
 link_directories(${PARENT_DIR}/OpenGL_Libraries/Libs)
 
-add_executable(blob_sea_src glad.c main.cpp Header_Files/shader.h Source_Files/shader.cpp Header_Files/stb_image.h Source_Files/stb_image.cpp Header_Files/camera.h Source_Files/camera.cpp Header_Files/mesh.h Source_Files/mesh.cpp Header_Files/model.h Source_Files/model.cpp)
+add_executable(blob_sea_src glad.c main.cpp Inc/shader.h Src/shader.cpp Inc/stb_image.h Src/stb_image.cpp Inc/camera.h Src/camera.cpp Inc/mesh.h Src/mesh.cpp Inc/model.h Src/model.cpp)
 
 # Linking GLFW
 target_link_libraries(blob_sea_src glfw assimp)
