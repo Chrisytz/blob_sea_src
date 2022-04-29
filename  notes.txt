@@ -1,0 +1,16 @@
+HELLO EVERYONE AND WELCOME TO THE TEXT FILE OF PAIN AND SUFFERING
+HERE YOU WILL FIND STUPID IDEAS AND DESTROYED EGOS
+
+Linking and things~
+- all is working now (i think)
+- how to compile glfw and assimp can be found here: https://learnopengl.com/Getting-started/Creating-a-window
+- the paths in CMakeLists.txt are mostly absolute paths
+    - i just have a folder thats like OpenGL_Libraries and in it are all the libraries and includes and things
+      (do not question the naming)
+- for assimp you have to download the source zip file and compile it yourself bc the default one or wtv is messed up
+- IDK WHY WE HAVE TO DRAG THE DLL FILE IN BUT IT WORKS SO IM NOT TOUCHING IT AND IM TOO SCARED TO DELETE IT BC
+  IF IT BREAKS I WILL BE EXTREMELY SAD
+- i spent an entire hour doing this and idt the model will even load in but thats a problem for another time...
+  AT LEAST EVERYTHING IS LINKED FINE IDK WHY THIS WAS SO HARD THE FIRST TIME I TRIED T COMPILE ASSIMP IT GAVE ME SO
+  MANY ERRORS SO I JUST TRIED AGAIN AND EVERYTHING WAS FINE??? LIKE WTF
+- also yea now there are three :D submodules :D have fun :D hehe
