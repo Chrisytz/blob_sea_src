@@ -43,6 +43,12 @@ glm::vec3 grid_scale = 0.5f * blob_scale;
 
 int grid_dim = 16;
 
+void draw_grid(glm::mat4 terrain_model, Shader TerrainShader);
+void mouse_callback(GLFWwindow *window, double xpos, double ypos);
+void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
+void processInput(GLFWwindow *window);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+
 int main()
 {
     // glfw: initialize and configure
@@ -76,7 +82,7 @@ int main()
 
     // build and compile our shader program
     // ------------------------------------
-    Shader BlobShader("../Resources/shader_blob.vert", "../Resources/shader_blob.frag"); // you can name your shader files however you like
+    Shader BlobShader("../Resources/shader_blob.vert", "../Resources/shader_blob.frag");
     Shader TerrainShader("../Resources/shader_terrain.vert", "../Resources/shader_terrain.frag");
 
     // doing texture things
@@ -188,10 +194,6 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    // You can unbind the VAO_blob afterwards so other VAO_blob calls won't accidentally modify this VAO_blob, but this rarely happens. Modifying other
-    // VAO_blobs requires a call to glBindVertexArray anyways so we generally don't unbind VAO_blobs (nor VBO_blobs) when it's not directly necessary.
-    // glBindVertexArray(0);
-
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window)) {
@@ -235,6 +237,9 @@ int main()
         terrain_model = glm::scale(terrain_model, grid_scale);
         terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim, 0.0f, -(float)grid_dim));
 
+        // activating shaders
+        // ------------------
+
         // activate the blob shader
         BlobShader.use();
         BlobShader.setMat4("projection", projection);
@@ -253,32 +258,8 @@ int main()
         // render the blob triangles
         glBindVertexArray(VAO_terrain);
 
-
         // drawing the grid
-        float val1, val2;
-        for (int i = 0; i < grid_dim; i++) {
-            terrain_model = glm::translate(terrain_model, glm::vec3(0.0f, 0.0f, 2.0f));
-            // colour things
-            if (i % 2 == 0) {
-                val1 = 1.0f;
-                val2 = 0.0f;
-            } else {
-                val1 = 0.0f;
-                val2 = 1.0f;
-            }
-            for (int j = 0; j < grid_dim; j++) {
-                // colour things cont
-                if (j % 2 == 0) {
-                    TerrainShader.setVec4("aColour", val1, 0.0f, 0.0f, 1.0f);
-                } else {
-                    TerrainShader.setVec4("aColour", val2, 0.0f, 0.0f, 1.0f);
-                }
-                terrain_model = glm::translate(terrain_model, glm::vec3(2.0f,  0.0f, 0.0f));
-                TerrainShader.setMat4("model", terrain_model);
-                glDrawArrays(GL_TRIANGLES, 0, 6);
-            }
-            terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim * 2.0f, 0.0f, 0.0f));
-        }
+        draw_grid(terrain_model, TerrainShader);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -298,6 +279,36 @@ int main()
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
+}
+
+void draw_grid(glm::mat4 terrain_model, Shader TerrainShader) {
+    float val1, val2;
+    // rows
+    for (int i = 0; i < grid_dim; i++) {
+        // setting val1 and val2 to get the checkered pattern
+        if (i % 2 == 0) {
+            val1 = 1.0f;
+            val2 = 0.0f;
+        } else {
+            val1 = 0.0f;
+            val2 = 1.0f;
+        }
+        // columns
+        for (int j = 0; j < grid_dim; j++) {
+            // setting the uniform to its colour
+            if (j % 2 == 0) {
+                TerrainShader.setVec4("aColour", val1, 0.0f, 0.0f, 1.0f);
+            } else {
+                TerrainShader.setVec4("aColour", val2, 0.0f, 0.0f, 1.0f);
+            }
+            // moving each square
+            terrain_model = glm::translate(terrain_model, glm::vec3(2.0f,  0.0f, 0.0f));
+            TerrainShader.setMat4("model", terrain_model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+        // moving to the next row
+        terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim * 2.0f, 0.0f, 2.0f));
+    }
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos) {
