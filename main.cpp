@@ -35,10 +35,13 @@ float lastFrame = 0.0f;
 // movement things
 float move_x = 0.0f;
 float move_z = 0.0f;
-float moveAdjustment = 0.1f;
+float moveAdjustment = 0.25f;
 
 // cube transformation things
-glm::vec3 blob_scale = glm::vec3(0.2f, 0.2f, 0.2f);
+glm::vec3 blob_scale = glm::vec3(0.5f, 0.5f, 0.5f);
+glm::vec3 grid_scale = 0.5f * blob_scale;
+
+int grid_dim = 16;
 
 int main()
 {
@@ -177,7 +180,7 @@ int main()
     glGenVertexArrays(1, &VAO_terrain);
     glGenBuffers(1, &VBO_terrain);
 
-    glBindVertexArray(VAO_terrain); 
+    glBindVertexArray(VAO_terrain);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO_terrain);
     glBufferData(GL_ARRAY_BUFFER, sizeof(terrainVertices), terrainVertices, GL_STATIC_DRAW);
@@ -227,6 +230,11 @@ int main()
         model = glm::translate(model, glm::vec3(0.0f, 0.5f, 0.0f));
         model = glm::translate(model, glm::vec3(move_x, 0.0f, move_z));
 
+        // transformations for the grid
+        glm::mat4 terrain_model = glm::mat4(1.0f);
+        terrain_model = glm::scale(terrain_model, grid_scale);
+        terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim, 0.0f, -(float)grid_dim));
+
         // activate the blob shader
         BlobShader.use();
         BlobShader.setMat4("projection", projection);
@@ -244,7 +252,33 @@ int main()
 
         // render the blob triangles
         glBindVertexArray(VAO_terrain);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+
+        // drawing the grid
+        float val1, val2;
+        for (int i = 0; i < grid_dim; i++) {
+            terrain_model = glm::translate(terrain_model, glm::vec3(0.0f, 0.0f, 2.0f));
+            // colour things
+            if (i % 2 == 0) {
+                val1 = 1.0f;
+                val2 = 0.0f;
+            } else {
+                val1 = 0.0f;
+                val2 = 1.0f;
+            }
+            for (int j = 0; j < grid_dim; j++) {
+                // colour things cont
+                if (j % 2 == 0) {
+                    TerrainShader.setVec4("aColour", val1, 0.0f, 0.0f, 1.0f);
+                } else {
+                    TerrainShader.setVec4("aColour", val2, 0.0f, 0.0f, 1.0f);
+                }
+                terrain_model = glm::translate(terrain_model, glm::vec3(2.0f,  0.0f, 0.0f));
+                TerrainShader.setMat4("model", terrain_model);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+            }
+            terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim * 2.0f, 0.0f, 0.0f));
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
