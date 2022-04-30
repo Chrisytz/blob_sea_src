@@ -19,7 +19,19 @@ add_subdirectory(${PARENT_DIR}/Blob_Lib/assimp-5.2.3/assimp assimp)
 
 link_directories(${PARENT_DIR}/Blob_Lib/Libs)
 
-add_executable(blob_sea_src glad.c main.cpp Inc/shader.h Src/shader.cpp Inc/stb_image.h Src/stb_image.cpp Inc/camera.h Src/camera.cpp Inc/mesh.h Src/mesh.cpp Inc/model.h Src/model.cpp)
+add_executable(blob_sea_src
+        glad.c
+        main.cpp
+        Inc/shader.h
+        Src/shader.cpp
+        Inc/stb_image.h
+        Src/stb_image.cpp
+        Inc/camera.h
+        Src/camera.cpp
+        Inc/mesh.h
+        Src/mesh.cpp
+        Inc/model.h
+        Src/model.cpp)
 
 # Linking GLFW
 target_link_libraries(blob_sea_src glfw assimp)

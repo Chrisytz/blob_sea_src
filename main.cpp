@@ -35,7 +35,10 @@ float lastFrame = 0.0f;
 // movement things
 float move_x = 0.0f;
 float move_z = 0.0f;
-float moveAdjustment = 0.01f;
+float moveAdjustment = 0.1f;
+
+// cube transformation things
+glm::vec3 blob_scale = glm::vec3(0.2f, 0.2f, 0.2f);
 
 int main()
 {
@@ -64,26 +67,21 @@ int main()
         return -1;
     }
 
-    // tell stb_image.h to flip loaded texture's on the y-axis (before loading model).
-    stbi_set_flip_vertically_on_load(true);
-
     // configure global opengl state
     // -----------------------------
     glEnable(GL_DEPTH_TEST);
 
     // build and compile our shader program
     // ------------------------------------
-    Shader ourShader("../Resources/shader.vert", "../Resources/shader.frag"); // you can name your shader files however you like
-
-    // load models
-    // -----------
-    Model ourModel("../Resources/backpack/backpack.obj");
+    Shader BlobShader("../Resources/shader_blob.vert", "../Resources/shader_blob.frag"); // you can name your shader files however you like
+    Shader TerrainShader("../Resources/shader_terrain.vert", "../Resources/shader_terrain.frag");
 
     // doing texture things
     // --------------------
     unsigned int texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
+
     // set the texture wrapping/filtering options (on the currently bound texture object)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -102,7 +100,16 @@ int main()
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     // ------------------------------------------------------------------
-    float vertices[] = {
+    float terrainVertices[] = {
+            -1.0f, 0.0f, -1.0f,
+            1.0f, 0.0f, -1.0f,
+            1.0f, 0.0f, 1.0f,
+            1.0f, 0.0f, 1.0f,
+            -1.0f, 0.0f, 1.0f,
+            -1.0f, 0.0f, -1.0f
+    };
+
+    float blobVertices[] = {
             -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
             0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
             0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -146,27 +153,18 @@ int main()
             -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
     };
 
-//    glm::vec3 cubePositions[] = {
-//            glm::vec3( 0.0f,  0.0f,  0.0f),
-//            glm::vec3( 2.0f,  5.0f, -15.0f),
-//            glm::vec3(-1.5f, -2.2f, -2.5f),
-//            glm::vec3(-3.8f, -2.0f, -12.3f),
-//            glm::vec3( 2.4f, -0.4f, -3.5f),
-//            glm::vec3(-1.7f,  3.0f, -7.5f),
-//            glm::vec3( 1.3f, -2.0f, -2.5f),
-//            glm::vec3( 1.5f,  2.0f, -2.5f),
-//            glm::vec3( 1.5f,  0.2f, -1.5f),
-//            glm::vec3(-1.3f,  1.0f, -1.5f)
-//    };
 
-    unsigned int VBO, VAO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    unsigned int VBO_blob, VAO_blob, VBO_terrain, VAO_terrain;
+
+    // VAO and VBO of the cube
+    glGenVertexArrays(1, &VAO_blob);
+    glGenBuffers(1, &VBO_blob);
+
     // bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-    glBindVertexArray(VAO);
+    glBindVertexArray(VAO_blob);
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_blob);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(blobVertices), blobVertices, GL_STATIC_DRAW);
 
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
@@ -175,8 +173,20 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+    // VAO and VBO of the ground
+    glGenVertexArrays(1, &VAO_terrain);
+    glGenBuffers(1, &VBO_terrain);
+
+    glBindVertexArray(VAO_terrain); 
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_terrain);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(terrainVertices), terrainVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // You can unbind the VAO_blob afterwards so other VAO_blob calls won't accidentally modify this VAO_blob, but this rarely happens. Modifying other
+    // VAO_blobs requires a call to glBindVertexArray anyways so we generally don't unbind VAO_blobs (nor VBO_blobs) when it's not directly necessary.
     // glBindVertexArray(0);
 
     // render loop
@@ -196,31 +206,45 @@ int main()
         glEnable(GL_DEPTH_TEST);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // bind textures
-        // for more than one u want to activate it and do some fancy stuff idk XD
-        glBindTexture(GL_TEXTURE_2D, texture);
 
-        // activate the shader
-        ourShader.use();
+        // bind textures
+        glBindTexture(GL_TEXTURE_2D, texture);
 
         // transformation things
         // ---------------------
+
+        // think of this as zooming things? i think?
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(camera.Zoom), 800.0f / 600.0f, 0.1f, 100.0f);
-        ourShader.setMat4("projection", projection);
 
+        // this is like the camera
         glm::mat4 view;
         view = camera.GetViewMatrix();
-        ourShader.setMat4("view", view);
 
-        // render the triangle
-        glBindVertexArray(VAO);
-
+        // movement of the box itself
         glm::mat4 model = glm::mat4(1.0f);
-//        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(10.0f), glm::vec3(1.0f, 0.3f, 0.5f));
+        model = glm::scale(model, blob_scale);
+        model = glm::translate(model, glm::vec3(0.0f, 0.5f, 0.0f));
         model = glm::translate(model, glm::vec3(move_x, 0.0f, move_z));
-        ourShader.setMat4("model", model);
+
+        // activate the blob shader
+        BlobShader.use();
+        BlobShader.setMat4("projection", projection);
+        BlobShader.setMat4("view", view);
+        BlobShader.setMat4("model", model);
+
+        // render the blob triangles
+        glBindVertexArray(VAO_blob);
         glDrawArrays(GL_TRIANGLES,0, 36);
+
+        // activate the terrain shader
+        TerrainShader.use();
+        TerrainShader.setMat4("projection", projection);
+        TerrainShader.setMat4("view", view);
+
+        // render the blob triangles
+        glBindVertexArray(VAO_terrain);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -230,8 +254,11 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     // ------------------------------------------------------------------------
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
+    glDeleteVertexArrays(1, &VAO_blob);
+    glDeleteVertexArrays(1, &VAO_terrain);
+    glDeleteBuffers(1, &VBO_blob);
+    glDeleteBuffers(1, &VBO_terrain);
+
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
@@ -282,14 +309,15 @@ void processInput(GLFWwindow *window) {
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
+
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        move_x -= 0.1f * moveAdjustment;
+        move_x -= moveAdjustment;
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        move_x += 0.1f * moveAdjustment;
+        move_x += moveAdjustment;
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        move_z -= 0.1f * moveAdjustment;
+        move_z -= moveAdjustment;
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        move_z += 0.1f * moveAdjustment;
+        move_z += moveAdjustment;
 
 
 }
