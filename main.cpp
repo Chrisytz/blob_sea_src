@@ -34,6 +34,10 @@ float moveAdjustment = 0.1;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+// lighting
+glm::vec3 lightPos(10.0f, 10.0f, 10.0f);
+glm::vec3 lightColour(1.0f, 1.0f, 1.0f);
+
 int main()
 {
     // glfw: initialize and configure
@@ -82,14 +86,13 @@ int main()
     // build and compile shaders
     // -------------------------
     Shader ourShader("../Resources/shader.vert", "../Resources/shader.frag");
+    Shader lightShader("../Resources/light_shader.vert", "../Resources/light_shader.frag");
+
 
     // load models
     // -----------
     Model ourModel("../Resources/blob/blob.obj");
 
-
-    // draw in wireframe
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // render loop
     // -----------
@@ -107,11 +110,14 @@ int main()
 
         // render
         // ------
-        glClearColor(0.05f, 0.4f, 0.05f, 1.0f);
+        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
+
+        ourShader.setVec3("lightPos", lightPos);
+        ourShader.setVec3("lightColor", lightColour);
 
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -125,7 +131,6 @@ int main()
         model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
         ourShader.setMat4("model", model);
         ourModel.Draw(ourShader);
-
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
