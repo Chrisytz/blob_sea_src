@@ -38,6 +38,12 @@ float lastFrame = 0.0f;
 glm::vec3 lightPos(10.0f, 10.0f, 10.0f);
 glm::vec3 lightColour(1.0f, 1.0f, 1.0f);
 
+// grid things
+int grid_dim = 16;
+
+glm::vec3 blob_scale = glm::vec3(0.5f, 0.5f, 0.5f);
+glm::vec3 grid_scale = 0.5f * blob_scale;
+
 int main()
 {
     // glfw: initialize and configure
@@ -86,14 +92,33 @@ int main()
     // build and compile shaders
     // -------------------------
     Shader ourShader("../Resources/shader.vert", "../Resources/shader.frag");
-    Shader lightShader("../Resources/light_shader.vert", "../Resources/light_shader.frag");
-
+    Shader terrainShader("../Resources/terrain_shader.vert", "../Resources/terrain_shader.frag");
 
     // load models
     // -----------
-    Model ourModel("../Resources/blob/blob.obj");
+    Model ourModel1("../Resources/blob/blob.obj");
 
+    float terrainVertices[] = {
+            -1.0f, 0.0f, -1.0f,
+            1.0f, 0.0f, -1.0f,
+            1.0f, 0.0f, 1.0f,
+            1.0f, 0.0f, 1.0f,
+            -1.0f, 0.0f, 1.0f,
+            -1.0f, 0.0f, -1.0f
+    };
 
+    // VAO and VBO of the ground
+    unsigned int VAO_terrain, VBO_terrain;
+    glGenVertexArrays(1, &VAO_terrain);
+    glGenBuffers(1, &VBO_terrain);
+
+    glBindVertexArray(VAO_terrain);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_terrain);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(terrainVertices), terrainVertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
@@ -122,15 +147,57 @@ int main()
         // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
-        ourShader.setMat4("projection", projection);
-        ourShader.setMat4("view", view);
+
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(move_x, 0.0f, move_z)); // translate it down so it's at the center of the scene
-        model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));	// it's a bit too big for our scene, so scale it down
+//        model = glm::translate(model, glm::vec3(move_x, 0.0f, move_z)); // translate it down so it's at the center of the scene
+//        model = glm::scale(model,  blob_scale);	// it's a bit too big for our scene, so scale it down
+//        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+
         ourShader.setMat4("model", model);
-        ourModel.Draw(ourShader);
+        ourShader.setMat4("projection", projection);
+        ourShader.setMat4("view", view);
+        //ourModel1.Draw(ourShader);
+
+        // transformations for the grid
+        glm::mat4 terrain_model = glm::mat4(1.0f);
+        terrain_model = glm::scale(terrain_model, grid_scale);
+        terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim, 0.0f, -(float)grid_dim));
+
+        // activate the terrain shader
+        terrainShader.use();
+        terrainShader.setMat4("projection", projection);
+        terrainShader.setMat4("view", view);
+
+        glBindVertexArray(VAO_terrain);
+
+        // drawing the grid
+        float val1, val2;
+        for (int i = 0; i < grid_dim; i++) {
+            terrain_model = glm::translate(terrain_model, glm::vec3(0.0f, 0.0f, 2.0f));
+            // colour things
+            if (i % 2 == 0) {
+                val1 = 1.0f;
+                val2 = 0.0f;
+            } else {
+                val1 = 0.0f;
+                val2 = 1.0f;
+            }
+            for (int j = 0; j < grid_dim; j++) {
+                // colour things cont
+                if (j % 2 == 0) {
+                    terrainShader.setVec4("aColour", glm::vec4(val1, 0.0f, 0.0f, 1.0f));
+                } else {
+                    terrainShader.setVec4("aColour", glm::vec4(val2, 0.0f, 0.0f, 1.0f));
+                }
+                terrain_model = glm::translate(terrain_model, glm::vec3(2.0f,  0.0f, 0.0f));
+                terrainShader.setMat4("model", terrain_model);
+                glDrawArrays(GL_TRIANGLES, 0, 6);
+            }
+            terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim * 2.0f, 0.0f, 0.0f));
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -160,13 +227,13 @@ void processInput(GLFWwindow *window)
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
     if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-        move_x -= 0.1f * moveAdjustment;
+        move_x -= moveAdjustment;
     if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-        move_x += 0.1f * moveAdjustment;
+        move_x += moveAdjustment;
     if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-        move_z -= 0.1f * moveAdjustment;
+        move_z -= moveAdjustment;
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-        move_z += 0.1f * moveAdjustment;
+        move_z += moveAdjustment;
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
