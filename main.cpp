@@ -39,10 +39,17 @@ glm::vec3 lightPos(10.0f, 10.0f, 10.0f);
 glm::vec3 lightColour(1.0f, 1.0f, 1.0f);
 
 // grid things
-int grid_dim = 16;
+const int grid_dim = 10;
 
+// scaling
 glm::vec3 blob_scale = glm::vec3(0.5f, 0.5f, 0.5f);
-glm::vec3 grid_scale = 0.5f * blob_scale;
+glm::vec3 grid_scale = blob_scale;
+
+void draw_terrain(glm::mat4 terrain_model, Shader terrainShader);
+void processInput(GLFWwindow *window);
+void framebuffer_size_callback(GLFWwindow* window, int width, int height);
+void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 int main()
 {
@@ -151,15 +158,13 @@ int main()
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
-//        model = glm::translate(model, glm::vec3(move_x, 0.0f, move_z)); // translate it down so it's at the center of the scene
-//        model = glm::scale(model,  blob_scale);	// it's a bit too big for our scene, so scale it down
-//        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
+        model = glm::translate(model, glm::vec3(move_x, 0.5f, move_z)); // translate it down so it's at the center of the scene
+        model = glm::scale(model, blob_scale);	// it's a bit too big for our scene, so scale it down
 
         ourShader.setMat4("model", model);
         ourShader.setMat4("projection", projection);
         ourShader.setMat4("view", view);
-        //ourModel1.Draw(ourShader);
+        ourModel1.Draw(ourShader);
 
         // transformations for the grid
         glm::mat4 terrain_model = glm::mat4(1.0f);
@@ -173,31 +178,7 @@ int main()
 
         glBindVertexArray(VAO_terrain);
 
-        // drawing the grid
-        float val1, val2;
-        for (int i = 0; i < grid_dim; i++) {
-            terrain_model = glm::translate(terrain_model, glm::vec3(0.0f, 0.0f, 2.0f));
-            // colour things
-            if (i % 2 == 0) {
-                val1 = 1.0f;
-                val2 = 0.0f;
-            } else {
-                val1 = 0.0f;
-                val2 = 1.0f;
-            }
-            for (int j = 0; j < grid_dim; j++) {
-                // colour things cont
-                if (j % 2 == 0) {
-                    terrainShader.setVec4("aColour", glm::vec4(val1, 0.0f, 0.0f, 1.0f));
-                } else {
-                    terrainShader.setVec4("aColour", glm::vec4(val2, 0.0f, 0.0f, 1.0f));
-                }
-                terrain_model = glm::translate(terrain_model, glm::vec3(2.0f,  0.0f, 0.0f));
-                terrainShader.setMat4("model", terrain_model);
-                glDrawArrays(GL_TRIANGLES, 0, 6);
-            }
-            terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim * 2.0f, 0.0f, 0.0f));
-        }
+        draw_terrain(terrain_model, terrainShader);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -209,6 +190,34 @@ int main()
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
+}
+
+void draw_terrain(glm::mat4 terrain_model, Shader terrainShader) {
+    // drawing the grid
+    float val1, val2;
+    for (int i = 0; i < grid_dim; i++) {
+        terrain_model = glm::translate(terrain_model, glm::vec3(0.0f, 0.0f, 2.0f));
+        // colour things
+        if (i % 2 == 0) {
+            val1 = 1.0f;
+            val2 = 0.0f;
+        } else {
+            val1 = 0.0f;
+            val2 = 1.0f;
+        }
+        for (int j = 0; j < grid_dim; j++) {
+            // colour things cont
+            if (j % 2 == 0) {
+                terrainShader.setVec4("aColour", glm::vec4(val1, 0.0f, 0.0f, 1.0f));
+            } else {
+                terrainShader.setVec4("aColour", glm::vec4(val2, 0.0f, 0.0f, 1.0f));
+            }
+            terrain_model = glm::translate(terrain_model, glm::vec3(2.0f,  0.0f, 0.0f));
+            terrainShader.setMat4("model", terrain_model);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        }
+        terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim * 2.0f, 0.0f, 0.0f));
+    }
 }
 
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
