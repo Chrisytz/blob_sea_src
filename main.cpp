@@ -9,7 +9,12 @@
 #include <camera.h>
 #include <model.h>
 
+#include <iomanip>
+#include <fstream>
+
 #include <iostream>
+
+#include<windows.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -45,7 +50,34 @@ const int grid_dim = 10;
 glm::vec3 blob_scale = glm::vec3(0.5f, 0.5f, 0.5f);
 glm::vec3 grid_scale = blob_scale;
 
-void draw_terrain(glm::mat4 terrain_model, Shader terrainShader);
+// temporary path bc idk how we wanna do this and i dont wanna int
+// this is the path from our python A star
+// [(0, 0), (0, 1), (0, 2), (0, 3), (1, 3), (2, 3), (3, 3), (4, 3), (5, 3), (5, 4), (5, 5), (4, 5), (3, 5), (2, 5), (2, 6), (1, 6), (1, 7), (0, 7)]
+glm::vec3 path_array[] = {
+        glm::vec3(0.0f, 0.0f, 0.0f),
+        glm::vec3(1.0f, 0.0f, 0.0f),
+        glm::vec3(2.0f, 0.0f, 0.0f),
+        glm::vec3(3.0f, 0.0f, 0.0f),
+        glm::vec3(3.0f, 0.0f, 1.0f),
+        glm::vec3(3.0f, 0.0f, 2.0f),
+        glm::vec3(3.0f, 0.0f, 3.0f),
+        glm::vec3(3.0f, 0.0f, 4.0f),
+        glm::vec3(3.0f, 0.0f, 5.0f),
+        glm::vec3(4.0f, 0.0f, 5.0f),
+        glm::vec3(5.0f, 0.0f, 5.0f),
+        glm::vec3(5.0f, 0.0f, 4.0f),
+        glm::vec3(5.0f, 0.0f, 3.0f),
+        glm::vec3(5.0f, 0.0f, 2.0f),
+        glm::vec3(6.0f, 0.0f, 2.0f),
+        glm::vec3(6.0f, 0.0f, 1.0f),
+        glm::vec3(7.0f, 0.0f, 1.0f),
+        glm::vec3(7.0f, 0.0f, 0.0f)
+};
+int index_val = 0;
+glm::vec3 blob_move;
+
+int** read_grid(int grid_dim);
+void draw_terrain(glm::mat4 terrain_model, Shader terrainShader, int** grid);
 void processInput(GLFWwindow *window);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -136,14 +168,14 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // input
-        // -----
-        processInput(window);
-
         // render
         // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // input
+        // -----
+        processInput(window);
 
         // don't forget to enable shader before setting uniforms
         ourShader.use();
@@ -158,7 +190,13 @@ int main()
 
         // render the loaded model
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(move_x, 0.5f, move_z)); // translate it down so it's at the center of the scene
+        model = glm::translate(model, glm::vec3(1.0f, 0.5f, 1.0f)); // translate it down so it's at the center of the scene
+
+        // OKAY so what we have ruight now is, everytime i press the left mouse button, the blob moves like one step bc i could not
+        // figure out how to move blob smoothly after one click time and delay confuses me TT
+        model = glm::translate(model, blob_move);
+
+//        model = glm::translate(model, glm::vec3(move_x, 0.5f, move_z)); // translate it down so it's at the center of the scene
         model = glm::scale(model, blob_scale);	// it's a bit too big for our scene, so scale it down
 
         ourShader.setMat4("model", model);
@@ -169,7 +207,7 @@ int main()
         // transformations for the grid
         glm::mat4 terrain_model = glm::mat4(1.0f);
         terrain_model = glm::scale(terrain_model, grid_scale);
-        terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim, 0.0f, -(float)grid_dim));
+//        terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim, 0.0f, -(float)grid_dim));
 
         // activate the terrain shader
         terrainShader.use();
@@ -178,7 +216,8 @@ int main()
 
         glBindVertexArray(VAO_terrain);
 
-        draw_terrain(terrain_model, terrainShader);
+        int **grid = read_grid(grid_dim);
+        draw_terrain(terrain_model, terrainShader, grid);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -192,29 +231,52 @@ int main()
     return 0;
 }
 
-void draw_terrain(glm::mat4 terrain_model, Shader terrainShader) {
+int** read_grid(int grid_dim) {
+    int** ret_array;
+    ret_array = new int*[grid_dim];
+    for (int i = 0; i < grid_dim; ++i) {
+        ret_array[i] = new int[grid_dim];
+    }
+    int x;
+    std::ifstream inFile;
+
+    inFile.open("../Resources/grid.txt");
+    if (!inFile) {
+        std::cout << "Unable to open file";
+        exit(1); // terminate with error
+    }
+
+    int row = 0;
+    int column = 0;
+
+    while (inFile >> x) {
+         ret_array[row][column] = x;
+         column += 1;
+         if (column == grid_dim) {
+             row += 1;
+             column = 0;
+         }
+    }
+
+    inFile.close();
+    return  ret_array;
+}
+
+void draw_terrain(glm::mat4 terrain_model, Shader terrainShader, int** grid) {
     // drawing the grid
-    float val1, val2;
+    float val;
     for (int i = 0; i < grid_dim; i++) {
         terrain_model = glm::translate(terrain_model, glm::vec3(0.0f, 0.0f, 2.0f));
-        // colour things
-        if (i % 2 == 0) {
-            val1 = 1.0f;
-            val2 = 0.0f;
-        } else {
-            val1 = 0.0f;
-            val2 = 1.0f;
-        }
         for (int j = 0; j < grid_dim; j++) {
-            // colour things cont
-            if (j % 2 == 0) {
-                terrainShader.setVec4("aColour", glm::vec4(val1, 0.0f, 0.0f, 1.0f));
-            } else {
-                terrainShader.setVec4("aColour", glm::vec4(val2, 0.0f, 0.0f, 1.0f));
-            }
-            terrain_model = glm::translate(terrain_model, glm::vec3(2.0f,  0.0f, 0.0f));
-            terrainShader.setMat4("model", terrain_model);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
+            if (grid[i][j] == 0)
+                val = 1.0f;
+            else
+                val = 0.0f;
+
+        terrainShader.setVec4("aColour", glm::vec4(val, 0.0f, 0.0f, 1.0f));
+        terrain_model = glm::translate(terrain_model, glm::vec3(2.0f,  0.0f, 0.0f));
+        terrainShader.setMat4("model", terrain_model);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
         }
         terrain_model = glm::translate(terrain_model, glm::vec3(-(float)grid_dim * 2.0f, 0.0f, 0.0f));
     }
@@ -243,6 +305,15 @@ void processInput(GLFWwindow *window)
         move_z -= moveAdjustment;
     if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
         move_z += moveAdjustment;
+
+    if (index_val <= 17) {
+        if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            blob_move = path_array[index_val];
+            index_val += 1;
+            Sleep(100);
+        }
+    }
+
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
