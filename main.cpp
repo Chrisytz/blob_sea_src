@@ -14,7 +14,9 @@
 
 #include <iostream>
 
-#include<windows.h>
+// #include<windows.h>
+#include <chrono>
+#include <thread>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -310,7 +312,8 @@ void processInput(GLFWwindow *window)
         if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
             blob_move = path_array[index_val];
             index_val += 1;
-            Sleep(100);
+            // Sleep(100);
+            std::this_thread::sleep_for(std::chrono::seconds(10));
         }
     }
 
